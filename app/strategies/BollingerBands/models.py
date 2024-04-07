@@ -12,3 +12,7 @@ class BollingerBandsConfig(BaseModel):
     days_back_to_consider: int = Field(30, g=0)
     num_std: int = Field(2, ge=1, le=3)
 
+
+class Corridor(BaseModel):
+    top: float
+    bottom: float
