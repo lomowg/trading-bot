@@ -7,6 +7,7 @@ from app.strategies.models import StrategyName
 
 strategies: Dict[StrategyName, BaseStrategy.__class__] = {
     StrategyName.INTERVAL: IntervalStrategy,
+    StrategyName.BOLLINGER_BANDS: BollingerBands,
 }
 
 
