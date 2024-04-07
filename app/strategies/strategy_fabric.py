@@ -1,5 +1,6 @@
 from typing import Dict
 
+from app.strategies.BollingerBands.BollingerBands import BollingerBands
 from app.strategies.interval.IntervalStrategy import IntervalStrategy
 from app.strategies.base import BaseStrategy
 from app.strategies.errors import UnsupportedStrategyError
