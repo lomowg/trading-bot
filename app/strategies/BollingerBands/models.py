@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 
-class BollingerBands(BaseModel):
+class BollingerBandsConfig(BaseModel):
     """
     Bollinger Bands Configuration
 
