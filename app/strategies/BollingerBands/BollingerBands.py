@@ -246,7 +246,7 @@ class BollingerBands(BaseStrategy):
                 profit = to_sell - to_buy - (to_sell - to_buy) * 0.006 - (to_sell - to_buy) * 0.13
                 logger.debug(f"\nLast price: {last_price}, figi={self.figi}\n"
                              f"Target price to buy: {to_buy} ({round((last_price - to_buy) / last_price * 100, 2)}%)\n"
-                             f"Target price to sell: {to_sell}\n"
+                             f"Target price to sell: {to_sell} ({round((to_sell - last_price) / to_sell * 100, 2)}%)\n"
                              f"Potential profit: {profit} ({round((to_sell - to_buy) / to_sell, 2)}%)\n")
 
                 await self.validate_stop_loss(last_price)
