@@ -49,10 +49,10 @@ class BollingerBands(BaseStrategy):
             f"days back from now. figi={self.figi}"
         )
         async for candle in client.get_all_candles(
-            figi=self.figi,
-            from_=now() - timedelta(days=120),
-            to=now(),
-            interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
+                figi=self.figi,
+                from_=now() - timedelta(days=120),
+                to=now(),
+                interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
         ):
             candles.append(candle)
         logger.debug(f"Found {len(candles)} candles. figi={self.figi}")
@@ -85,7 +85,7 @@ class BollingerBands(BaseStrategy):
         """
         trading_status = await client.get_trading_status(figi=self.figi)
         while not (
-            trading_status.market_order_available_flag and trading_status.api_trade_available_flag
+                trading_status.market_order_available_flag and trading_status.api_trade_available_flag
         ):
             logger.debug(f"Waiting for the market to open. figi={self.figi}")
             await asyncio.sleep(60)
@@ -163,7 +163,7 @@ class BollingerBands(BaseStrategy):
         :param last_price: last price of the instrument
         """
         position_quantity = await self.get_position_quantity()
-        if position_quantity < self.config.quantity_limit:
+        if position_quantity <= self.config.quantity_limit:
             quantity_to_buy = self.config.quantity_limit - position_quantity
             logger.info(
                 f"Buying {quantity_to_buy} shares. Last price={last_price} figi={self.figi}"
@@ -241,7 +241,13 @@ class BollingerBands(BaseStrategy):
                     continue
 
                 last_price = await self.get_last_price()
-                logger.debug(f"Last price: {last_price}, figi={self.figi}")
+                to_buy = self.corridor.bottom
+                to_sell = self.corridor.top
+                profit = to_sell - to_buy - (to_sell - to_buy) * 0.006 - (to_sell - to_buy) * 0.13
+                logger.debug(f"\nLast price: {last_price}, figi={self.figi}\n"
+                             f"Target price to buy: {to_buy} ({round((last_price - to_buy) / last_price * 100, 2)}%)\n"
+                             f"Target price to sell: {to_sell}\n"
+                             f"Potential profit: {profit} ({round((to_sell - to_buy) / to_sell, 2)}%)\n")
 
                 await self.validate_stop_loss(last_price)
 
