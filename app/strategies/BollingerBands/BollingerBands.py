@@ -1,6 +1,6 @@
 import asyncio
 import logging
-import numpy as np
+import pandas as pd
 from uuid import uuid4
 
 from tinkoff.invest.utils import now
@@ -45,12 +45,12 @@ class BollingerBands(BaseStrategy):
         """
         candles = []
         logger.debug(
-            f"Start getting historical data for {self.config.days_back_to_consider} "
+            f"Start getting historical data for 120 "
             f"days back from now. figi={self.figi}"
         )
         async for candle in client.get_all_candles(
             figi=self.figi,
-            from_=now() - timedelta(days=self.config.days_back_to_consider),
+            from_=now() - timedelta(days=120),
             to=now(),
             interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
         ):
@@ -103,17 +103,23 @@ class BollingerBands(BaseStrategy):
         candles = await self.get_historical_data()
         if len(candles) == 0:
             return
-        values = []
-        for candle in candles:
-            values.append(quotation_to_float(candle.close))
-        rolling_mean = np.mean(values)
-        rolling_std = np.std(values)
-        self.corridor = Corridor(
-            bottom=rolling_mean - self.config.num_std * rolling_std, top=rolling_mean + self.config.num_std * rolling_std
-        )
+
+        values = [quotation_to_float(candle.close) for candle in candles]
+
+        prices_series = pd.Series(values)
+
+        rolling_mean = prices_series.rolling(window=self.config.length).mean()
+        rolling_std = prices_series.rolling(window=self.config.length).std()
+
+        bottom_band = rolling_mean - self.config.num_std * rolling_std
+        top_band = rolling_mean + self.config.num_std * rolling_std
+
+        self.corridor = Corridor(bottom=bottom_band.iloc[-1], top=top_band.iloc[-1])
+
         logger.debug(
-            f"Bollinger Bands: {self.corridor}. "
-            f"days_back_to_consider={self.config.days_back_to_consider} figi={self.figi}"
+            f"Bollinger Bands: {self.corridor}.\n"
+            f"Length={self.config.length} num_std={self.config.num_std} check_interval={self.config.check_interval} quantity_limit={self.config.quantity_limit} figi={self.figi}\n"
+            f"Mean: {rolling_mean.iloc[-1]}\n"
         )
 
     async def handle_bollinger_band_crossing_top(self, last_price: float) -> None:
