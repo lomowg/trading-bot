@@ -7,3 +7,5 @@ instruments_config.json
 market_data_cache/
 tests/**/*.txt
 stats.db
+
+tokens
