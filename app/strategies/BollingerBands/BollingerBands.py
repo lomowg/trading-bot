@@ -252,7 +252,7 @@ class BollingerBands(BaseStrategy):
                 to_buy = self.corridor.bottom
                 to_sell = self.corridor.top
                 profit = to_sell*self.total_quantity - self.total_price - self.total_price*0.003 - to_sell*self.total_quantity*0.003 - (to_sell*self.total_quantity - self.total_price) * 0.13
-                price_to_sell = self.total_price*1.007
+                price_to_sell = self.total_price/self.total_quantity*1.007
                 logger.debug(f"\nLast price: {last_price}, figi={self.figi}\n"
                              f"Top band: {to_sell} ({round((to_sell - last_price) / to_sell * 100, 2)}%)\n"
                              f"Bottom band: {to_buy} ({round((last_price - to_buy) / last_price * 100, 2)}%)\n"
