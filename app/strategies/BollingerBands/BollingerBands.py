@@ -35,6 +35,8 @@ class BollingerBands(BaseStrategy):
         self.corridor: Optional[Corridor] = None
         self.config: BollingerBandsConfig = BollingerBandsConfig(**kwargs)
         self.stats_handler = StatsHandler(StrategyName.BOLLINGER_BANDS, client)
+        self.total_price = 0
+        self.total_quantity = 0
 
     async def get_historical_data(self) -> List[HistoricCandle]:
         """
@@ -45,12 +47,12 @@ class BollingerBands(BaseStrategy):
         """
         candles = []
         logger.debug(
-            f"Start getting historical data for 120 "
+            f"Start getting historical data for 90 "
             f"days back from now. figi={self.figi}"
         )
         async for candle in client.get_all_candles(
                 figi=self.figi,
-                from_=now() - timedelta(days=120),
+                from_=now() - timedelta(days=90),
                 to=now(),
                 interval=CandleInterval.CANDLE_INTERVAL_1_MIN,
         ):
@@ -154,6 +156,8 @@ class BollingerBands(BaseStrategy):
                     order_id=posted_order.order_id, account_id=self.account_id
                 )
             )
+            self.total_price = 0
+            self.total_quantity = 0
 
     async def handle_bollinger_band_crossing_bottom(self, last_price: float) -> None:
         """
@@ -188,6 +192,8 @@ class BollingerBands(BaseStrategy):
                     order_id=posted_order.order_id, account_id=self.account_id
                 )
             )
+            self.total_price = last_price*quantity_to_buy
+            self.total_quantity = quantity_to_buy
 
     async def validate_stop_loss(self, last_price: float) -> None:
         """
@@ -221,6 +227,8 @@ class BollingerBands(BaseStrategy):
                     order_id=posted_order.order_id, account_id=self.account_id
                 )
             )
+            self.total_price = 0
+            self.total_quantity = 0
         return
 
     async def main_cycle(self):
@@ -243,15 +251,16 @@ class BollingerBands(BaseStrategy):
                 last_price = await self.get_last_price()
                 to_buy = self.corridor.bottom
                 to_sell = self.corridor.top
-                profit = to_sell - to_buy - (to_sell - to_buy) * 0.006 - (to_sell - to_buy) * 0.13
+                profit = to_sell*self.total_quantity - self.total_price - self.total_price*0.003 - to_sell*self.total_quantity*0.003 - (to_sell*self.total_quantity - self.total_price) * 0.13
                 logger.debug(f"\nLast price: {last_price}, figi={self.figi}\n"
                              f"Target price to buy: {to_buy} ({round((last_price - to_buy) / last_price * 100, 2)}%)\n"
                              f"Target price to sell: {to_sell} ({round((to_sell - last_price) / to_sell * 100, 2)}%)\n"
-                             f"Potential profit: {profit} ({round((to_sell - to_buy) / to_sell, 2)}%)\n")
+                             f"Potential profit: {profit}\n"
+                             f"Total price: {self.total_price}")
 
                 await self.validate_stop_loss(last_price)
 
-                if last_price >= self.corridor.top:
+                if last_price >= self.corridor.top and profit > 0:
                     logger.debug(
                         f"Last price {last_price} is higher than top Bollinger Band "
                         f"{self.corridor.top}. figi={self.figi}"
